@@ -1,0 +1,5 @@
+const CONFIG = {
+  API_KEY: 'YOUR_OPENWEATHERMAP_API_KEY',
+  DEFAULT_CITY: 'Aarhus,DK',
+  UNITS: 'metric'
+};

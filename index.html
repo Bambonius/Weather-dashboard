@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Atmospheric weather dashboard powered by OpenWeatherMap">
+  <title>Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <h1 class="header__title">Weather</h1>
+      <div class="header__controls">
+        <div class="search">
+          <svg class="search__icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="search__input" id="searchInput" placeholder="Search city..." autocomplete="off" spellcheck="false">
+          <button class="search__button" id="searchButton" type="button" aria-label="Search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+          <ul class="search__suggestions" id="searchSuggestions" hidden></ul>
+        </div>
+        <div class="toggle" id="unitToggle">
+          <span class="toggle__label toggle__label--active" data-unit="metric">°C</span>
+          <button class="toggle__switch" aria-label="Toggle temperature unit" role="switch" aria-checked="false" id="unitSwitch">
+            <span class="toggle__thumb"></span>
+          </button>
+          <span class="toggle__label" data-unit="imperial">°F</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="setup" id="setupPrompt" hidden>
+        <div class="setup__card">
+          <h2>Welcome to Weather</h2>
+          <p>To get started, create a <code>js/config.js</code> file with your OpenWeatherMap API key:</p>
+          <pre class="setup__code">const CONFIG = {
+  API_KEY: <span class="setup__placeholder">'your-api-key'</span>,
+  DEFAULT_CITY: 'Aarhus,DK',
+  UNITS: 'metric'
+};</pre>
+          <p>Copy from <code>js/config.example.js</code> and replace the placeholder.</p>
+        </div>
+      </div>
+
+      <div class="loading" id="loading" hidden>
+        <div class="loading__spinner"></div>
+        <p class="loading__text">Loading weather data…</p>
+      </div>
+
+      <div class="error" id="error" hidden>
+        <div class="error__card">
+          <p class="error__message" id="errorMessage"></p>
+          <button class="error__dismiss" id="errorDismiss">Dismiss</button>
+        </div>
+      </div>
+
+      <div class="weather" id="weatherContent" hidden>
+        <section class="current">
+          <div class="current__location">
+            <h2 class="current__city" id="cityName"></h2>
+            <p class="current__date" id="dateDisplay"></p>
+          </div>
+          <div class="current__main">
+            <span class="current__value" id="tempValue"></span>
+            <span class="current__unit" id="tempUnit">°C</span>
+          </div>
+          <div class="current__condition">
+            <img class="current__icon" id="weatherIcon" alt="">
+            <p class="current__desc" id="weatherDesc"></p>
+          </div>
+          <p class="current__feels" id="feelsLike"></p>
+        </section>
+
+        <section class="details">
+          <div class="detail-card" id="humidityCard">
+            <div class="detail-card__icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+            <span class="detail-card__label">Humidity</span>
+            <span class="detail-card__value" id="humidityValue">--</span>
+          </div>
+          <div class="detail-card" id="windCard">
+            <div class="detail-card__icon">
+              <svg class="detail-card__wind-arrow" id="windArrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+                <polyline points="8 6 12 2 16 6"></polyline>
+              </svg>
+            </div>
+            <span class="detail-card__label">Wind</span>
+            <span class="detail-card__value" id="windValue">--</span>
+            <span class="detail-card__direction" id="windDir"></span>
+          </div>
+          <div class="detail-card detail-card--wide detail-card--aqi" id="aqiCard">
+            <span class="detail-card__label">Air Quality</span>
+            <div class="aqi-card">
+              <div class="aqi-card__badge" id="aqiBadge">
+                <span class="aqi-badge__value" id="aqiBadgeValue">--</span>
+                <span class="aqi-badge__label" id="aqiBadgeLabel">No data</span>
+              </div>
+              <div class="aqi-card__pollutants">
+                <div class="pollutant">
+                  <span class="pollutant__label">PM2.5</span>
+                  <div class="pollutant__bar-track">
+                    <div class="pollutant__bar-fill" id="pm25Fill"></div>
+                  </div>
+                  <span class="pollutant__value" id="pm25Value">--</span>
+                </div>
+                <div class="pollutant">
+                  <span class="pollutant__label">PM10</span>
+                  <div class="pollutant__bar-track">
+                    <div class="pollutant__bar-fill" id="pm10Fill"></div>
+                  </div>
+                  <span class="pollutant__value" id="pm10Value">--</span>
+                </div>
+                <div class="pollutant">
+                  <span class="pollutant__label">O₃</span>
+                  <div class="pollutant__bar-track">
+                    <div class="pollutant__bar-fill" id="o3Fill"></div>
+                  </div>
+                  <span class="pollutant__value" id="o3Value">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="forecast">
+          <h3 class="forecast__title">5-Day Forecast</h3>
+          <div class="forecast__list" id="forecastList"></div>
+        </section>
+
+        <section class="recent" id="recentSection" hidden>
+          <div class="recent__header">
+            <h3 class="recent__title">Recent Searches</h3>
+            <button class="recent__clear" id="clearRecent">Clear all</button>
+          </div>
+          <p class="recent__empty" id="recentEmpty">No recent searches yet</p>
+          <div class="recent__list" id="recentList"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
